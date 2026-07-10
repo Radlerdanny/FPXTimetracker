@@ -7,12 +7,12 @@
 # Ergebnis: dist/FPX Timetracker/ (Ordner mit .exe + DLLs)
 
 a = Analysis(
-    ['windows/fpx_tray.py'],
-    pathex=['.'],              # Projektverzeichnis → findet config.py + fpx_timetracker.py
+    ['fpx_tray.py'],           # relativ zum Spec-Verzeichnis (windows/)
+    pathex=['..'],             # Projektverzeichnis → findet config.py + fpx_timetracker.py
     binaries=[],
     datas=[
-        ('Logo/Windows/tray.ico', 'Logo/Windows'),
-        ('Logo/Windows/app.ico',  'Logo/Windows'),
+        ('../Logo/Windows/tray.ico', 'Logo/Windows'),
+        ('../Logo/Windows/app.ico',  'Logo/Windows'),
     ],
     hiddenimports=[
         'fpx_timetracker',     # per --popover-Flag zur Laufzeit importiert
@@ -41,7 +41,7 @@ exe = EXE(
     strip=False,
     upx=False,
     console=False,
-    icon='Logo/Windows/app.ico',
+    icon='../Logo/Windows/app.ico',
 )
 
 coll = COLLECT(
