@@ -52,6 +52,13 @@ def _autostart_disable():
     except OSError:
         pass
 
+# Nur für CI: prüft die tatsächlich im fertigen .exe-Bundle gebündelte Tk-Version
+# (nicht nur die Build-Umgebung) – siehe build-windows.yml.
+if "--print-tk-version" in sys.argv:
+    import tkinter
+    print(tkinter.TkVersion)
+    sys.exit(0)
+
 # Erste Ausführung muss den Popover-Modus direkt starten,
 # weil im PyInstaller-Bundle Tray und Tracker dieselbe .exe sind.
 if "--popover" in sys.argv:

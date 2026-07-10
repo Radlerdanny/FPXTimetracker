@@ -50,6 +50,17 @@ jobs:
           source .venv/Scripts/activate
           pyinstaller windows/fpx_installer.spec
 
+      - name: Tk-Version IM FERTIGEN .exe-BUNDLE verifizieren (nicht nur Build-Umgebung)
+        shell: pwsh
+        run: |
+          $exe = "dist\FPX Timetracker\FPX Timetracker.exe"
+          $v = & $exe --print-tk-version
+          Write-Host "Tk-Version im Bundle: $v"
+          if ([double]$v -ge 9.0) {
+            Write-Host "::error::FALSCHE Tk-Version $v im fertigen Bundle – muss 8.6.x sein!"
+            exit 1
+          }
+
       - name: App-Start verifizieren (tatsächlicher Start)
         shell: pwsh
         run: |
