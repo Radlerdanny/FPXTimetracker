@@ -50,24 +50,30 @@ jobs:
           source .venv/Scripts/activate
           pyinstaller windows/fpx_installer.spec
 
-      - name: Tk-Version IM FERTIGEN .exe-BUNDLE verifizieren (nicht nur Build-Umgebung)
+      - name: Tk-DLLs IM FERTIGEN .exe-BUNDLE verifizieren (nicht nur Build-Umgebung)
         shell: pwsh
-        timeout-minutes: 2
         run: |
-          $exe = "dist\FPX Timetracker\FPX Timetracker.exe"
-          $outFile = "$env:TEMP\tkversion.txt"
-          Remove-Item $outFile -ErrorAction SilentlyContinue
-          # Direkter Aufruf (&) statt Start-Process -Wait: Start-Process -Wait hängt
-          # sich bei dieser windowed .exe komplett auf (getestet, brach nach >15min nie
-          # ab). Der Call-Operator kehrt dagegen sofort zurück.
-          & $exe --print-tk-version $outFile
-          Start-Sleep -Seconds 1
-          $v = Get-Content $outFile -ErrorAction SilentlyContinue
-          Write-Host "Tk-Version im Bundle: $v"
-          if (-not $v -or [double]$v -ge 9.0) {
-            Write-Host "::error::FALSCHE oder fehlende Tk-Version '$v' im fertigen Bundle – muss 8.6.x sein!"
+          # Anders als bei Mac (py2app kopiert ganze Frameworks mit mehreren
+          # Versions-Ordnern) sammelt PyInstaller auf Windows gezielt nur die
+          # tatsächlich verlinkten DLLs ein – das Risiko "ungenutzte 9.0 rutscht
+          # als Beifang mit rein" besteht hier strukturell nicht in der gleichen
+          # Form. Trotzdem: Dateinamen der gebündelten Tcl/Tk-DLLs prüfen statt
+          # blind zu vertrauen (ohne die App auszuführen).
+          $good = Get-ChildItem -Path "dist\FPX Timetracker" -Recurse -Include "tcl86*.dll","tk86*.dll" -ErrorAction SilentlyContinue
+          Write-Host "Gefundene Tcl/Tk-8.6-DLLs:"
+          $good | ForEach-Object { Write-Host "  $($_.Name)" }
+
+          $bad = Get-ChildItem -Path "dist\FPX Timetracker" -Recurse -Include "tcl9*.dll","tk9*.dll" -ErrorAction SilentlyContinue
+          if ($bad) {
+            Write-Host "::error::Tk-9.x-DLLs im Bundle gefunden – darf nicht sein!"
+            $bad | ForEach-Object { Write-Host "  $($_.Name)" }
             exit 1
           }
+          if (-not $good -or $good.Count -eq 0) {
+            Write-Host "::error::Keine Tcl/Tk-8.6-DLLs gefunden – unerwartete Bundle-Struktur, bitte prüfen."
+            exit 1
+          }
+          Write-Host "✓ Nur Tcl/Tk 8.6 im Bundle gefunden."
 
       - name: App-Start verifizieren (tatsächlicher Start)
         shell: pwsh
