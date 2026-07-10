@@ -48,9 +48,10 @@ jobs:
       - name: Installer bauen
         run: |
           V="${{ steps.ver.outputs.VERSION }}"
-          "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" \
+          # MSYS_NO_PATHCONV=1 verhindert, dass Git Bash /D... als Laufwerkspfad übersetzt
+          MSYS_NO_PATHCONV=1 "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" \
             "/DMyAppVersion=${V}" \
-            windows/fpx_installer.iss
+            "windows/fpx_installer.iss"
 
       - name: Installer zu GitHub Release hochladen
         uses: softprops/action-gh-release@v2
