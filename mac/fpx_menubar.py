@@ -65,6 +65,14 @@ def _check_github():
     except Exception: return None
 
 
+def _as_escape(s: str) -> str:
+    """Escaped Backslash und Anführungszeichen für die Einbettung in einen
+    AppleScript-String-Literal – ohne das bricht z.B. ein Changelog-Text mit
+    einem " die AppleScript-Syntax (getestet: führt zu einem Syntax-Fehler,
+    das Update-Dialog erscheint dann einfach nicht, unbemerkt)."""
+    return s.replace("\\", "\\\\").replace('"', '\\"')
+
+
 def _ask_user_update(version: str, changelog: str) -> bool:
     cl_lines = [l.strip() for l in (changelog or "").split("\n") if l.strip()][:5]
     cl_text = "\\n".join(cl_lines) if cl_lines else "Keine Details verfügbar."
@@ -73,7 +81,7 @@ def _ask_user_update(version: str, changelog: str) -> bool:
            f"{cl_text}\\n\\nJetzt aktualisieren?")
     result = subprocess.run([
         "osascript", "-e",
-        f'display dialog "{msg}" '
+        f'display dialog "{_as_escape(msg)}" '
         f'buttons {{"Später", "Aktualisieren"}} '
         f'default button "Aktualisieren" '
         f'with title "FPX Timetracker – Update verfügbar"'
@@ -121,11 +129,14 @@ def _autostart_enabled() -> bool:
 
 
 def _autostart_enable():
+    # RunAtLoad MUSS True sein, sonst startet der LaunchAgent nie automatisch beim
+    # nächsten echten Login (empirisch getestet: mit False wird der Job zwar bei
+    # "launchctl load" registriert, aber ohne weiteren Trigger nie ausgeführt).
     _AGENT_PLIST.parent.mkdir(parents=True, exist_ok=True)
     plist = {
         "Label": _AGENT_ID,
         "ProgramArguments": _autostart_args(),
-        "RunAtLoad": False,
+        "RunAtLoad": True,
         "WorkingDirectory": str(ROOT),
     }
     with open(_AGENT_PLIST, "wb") as f:
