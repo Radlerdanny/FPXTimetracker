@@ -56,7 +56,6 @@ OPTIONS = {
         "Logo/Icon.png",
     ],
     "iconfile": "Logo/Mac/app.icns",
-    "codesign_identity": "-",         # Ad-hoc-Signing – kein Apple Developer Certificate nötig
     "plist": {
         "CFBundleName":               APP_NAME,
         "CFBundleDisplayName":        APP_NAME,

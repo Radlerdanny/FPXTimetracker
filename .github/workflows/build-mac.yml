@@ -35,6 +35,12 @@ jobs:
       - name: .app mit py2app bauen
         run: |
           source .venv/bin/activate
+          # Fake codesign: py2app versucht zu signieren, aber im CI gibt es kein Apple-Zertifikat.
+          # Der Fake-Wrapper gibt immer 0 zurück – Quarantine wird sowieso via Installieren.command entfernt.
+          mkdir -p "$HOME/bin"
+          printf '#!/bin/bash\nexit 0\n' > "$HOME/bin/codesign"
+          chmod +x "$HOME/bin/codesign"
+          export PATH="$HOME/bin:$PATH"
           python setup.py py2app
 
       - name: Release-ZIP erstellen
