@@ -84,7 +84,7 @@ def _ask_user_update(version: str, changelog: str) -> bool:
 def check_and_update(_delegate, manual: bool = False):
     global _pending_update
     if not manual:
-        time.sleep(3)
+        time.sleep(5)
     res = _check_github()
     if not res:
         if manual:

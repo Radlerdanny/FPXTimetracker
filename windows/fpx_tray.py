@@ -227,7 +227,7 @@ def _download_installer(url: str, filename: str) -> "Path | None":
 
 def check_and_update(app: "TrayApp", manual: bool = False):
     if not manual:
-        time.sleep(3)
+        time.sleep(5)
     res = _check_github()
     if not res:
         if manual:
