@@ -16,10 +16,26 @@ jobs:
       - name: Code auschecken
         uses: actions/checkout@v4
 
-      - name: Python 3.14 installieren
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.14'
+      - name: Python 3.14.3 installieren (offizieller python.org-Installer)
+        run: |
+          # WICHTIG: actions/setup-python installiert auf macOS einen Build aus dem
+          # actions/python-versions-Repo, der Tcl/Tk 9.0 bündelt – sichtbar andere
+          # Optik (größere Schrift, andere Buttons) als die bisher genutzte Tk-8.6-Basis.
+          # Der offizielle python.org-Installer bündelt für 3.14.3 weiterhin Tcl/Tk 8.6.17,
+          # exakt was wir brauchen. Deshalb hier bewusst NICHT actions/setup-python.
+          curl -o python.pkg "https://www.python.org/ftp/python/3.14.3/python-3.14.3-macos11.pkg"
+          sudo installer -pkg python.pkg -target /
+          echo "/Library/Frameworks/Python.framework/Versions/3.14/bin" >> "$GITHUB_PATH"
+
+      - name: Tcl/Tk-Version verifizieren (muss 8.6.x sein, nicht 9.x)
+        run: |
+          export PATH="/Library/Frameworks/Python.framework/Versions/3.14/bin:$PATH"
+          python3 -c "
+          import tkinter
+          v = tkinter.TkVersion
+          print(f'Tk-Version: {v}')
+          assert v < 9.0, f'FALSCHE Tk-Version {v} – muss 8.6.x sein!'
+          "
 
       - name: Version aus Tag lesen
         id: ver

@@ -25,6 +25,15 @@ jobs:
         with:
           python-version: '3.14'
 
+      - name: Tcl/Tk-Version verifizieren (muss 8.6.x sein, nicht 9.x)
+        run: |
+          python -c "
+          import tkinter
+          v = tkinter.TkVersion
+          print(f'Tk-Version: {v}')
+          assert v < 9.0, f'FALSCHE Tk-Version {v} – muss 8.6.x sein!'
+          "
+
       - name: Version aus Tag lesen
         id: ver
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
