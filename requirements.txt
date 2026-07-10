@@ -1,0 +1,13 @@
+# FPX Timetracker — Abhängigkeiten
+# Python: 3.14.3
+# Installation: pip install -r requirements.txt
+
+# Gemeinsam (Mac + Windows)
+requests>=2.31
+
+# macOS — Menüleisten-Icon
+pyobjc-framework-Cocoa>=9.0; sys_platform == "darwin"
+
+# Windows — System Tray
+pystray>=0.19; sys_platform == "win32"
+Pillow>=10.0; sys_platform == "win32"
