@@ -54,10 +54,14 @@ jobs:
         shell: pwsh
         run: |
           $exe = "dist\FPX Timetracker\FPX Timetracker.exe"
-          $v = & $exe --print-tk-version
+          $outFile = "$env:TEMP\tkversion.txt"
+          Remove-Item $outFile -ErrorAction SilentlyContinue
+          Start-Process -FilePath $exe -ArgumentList "--print-tk-version", $outFile -Wait
+          Start-Sleep -Seconds 1
+          $v = Get-Content $outFile -ErrorAction SilentlyContinue
           Write-Host "Tk-Version im Bundle: $v"
-          if ([double]$v -ge 9.0) {
-            Write-Host "::error::FALSCHE Tk-Version $v im fertigen Bundle – muss 8.6.x sein!"
+          if (-not $v -or [double]$v -ge 9.0) {
+            Write-Host "::error::FALSCHE oder fehlende Tk-Version '$v' im fertigen Bundle – muss 8.6.x sein!"
             exit 1
           }
 
