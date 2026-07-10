@@ -1,5 +1,5 @@
 ; FPX Timetracker – Inno Setup Installationsskript
-; Aufruf: ISCC /DMyAppVersion=0.8.1 windows\fpx_installer.iss
+; Aufruf: ISCC /DMyAppVersion=0.8.2 windows\fpx_installer.iss
 
 #ifndef MyAppVersion
   #define MyAppVersion "0.0.0"

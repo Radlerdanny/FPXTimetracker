@@ -81,11 +81,19 @@ def _ask_user_update(version: str, changelog: str) -> bool:
     return result.returncode == 0
 
 
-def check_and_update(_delegate):
+def check_and_update(_delegate, manual: bool = False):
     global _pending_update
-    time.sleep(8)
+    if not manual:
+        time.sleep(8)
     res = _check_github()
-    if not res: return
+    if not res:
+        if manual:
+            subprocess.run([
+                "osascript", "-e",
+                'display notification "FPX Timetracker ist auf dem neuesten Stand." '
+                'with title "FPX Timetracker"'
+            ], capture_output=True)
+        return
     version, changelog, url, filename = res
     if not _ask_user_update(version, changelog): return
     current_app = str(Path(sys.executable).parent.parent.parent) if getattr(sys, "frozen", False) else ""
@@ -259,7 +267,7 @@ class AppDelegate(NSObject):
             write_ipc({"cmd": "show", "ts": time.time()})
 
     def manualCheckUpdate_(self, sender):
-        threading.Thread(target=lambda: check_and_update(self), daemon=True).start()
+        threading.Thread(target=lambda: check_and_update(self, manual=True), daemon=True).start()
 
     def _launch_update(self, url: str, filename: str, current_app: str):
         """Auf dem Main-Thread: Tracker beenden, Update-Downloader starten, App beenden."""

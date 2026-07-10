@@ -225,10 +225,17 @@ def _download_installer(url: str, filename: str) -> "Path | None":
     return result[0]
 
 
-def check_and_update(app: "TrayApp"):
-    time.sleep(5)
+def check_and_update(app: "TrayApp", manual: bool = False):
+    if not manual:
+        time.sleep(5)
     res = _check_github()
-    if not res: return
+    if not res:
+        if manual:
+            import ctypes
+            ctypes.windll.user32.MessageBoxW(
+                0, "FPX Timetracker ist auf dem neuesten Stand.",
+                "FPX Timetracker", 0x40)
+        return
     version, changelog, url, filename = res
     if not _ask_user(version, changelog): return
     installer = _download_installer(url, filename)
@@ -298,7 +305,7 @@ class TrayApp:
             _autostart_enable()
 
     def on_check_update(self, icon, item):
-        threading.Thread(target=lambda: check_and_update(self), daemon=True).start()
+        threading.Thread(target=lambda: check_and_update(self, manual=True), daemon=True).start()
 
     def on_quit(self, icon, item):
         self._stop_tick = True
