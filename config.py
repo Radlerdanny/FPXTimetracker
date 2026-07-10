@@ -2,7 +2,7 @@
 import json, os, platform, sys, time
 from pathlib import Path
 
-APP_VERSION  = "0.8.1"
+APP_VERSION  = "0.8.2"
 GITHUB_REPO  = "Radlerdanny/FPXTimetracker"
 IS_WIN = platform.system() == "Windows"
 IS_MAC = platform.system() == "Darwin"

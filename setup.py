@@ -29,7 +29,7 @@ class py2app_fixed(_py2app_base):
 
 APP_NAME = "FPX Timetracker"
 APP      = ["mac/fpx_menubar.py"]
-VERSION  = "0.8.1"
+VERSION  = "0.8.2"
 
 OPTIONS = {
     "argv_emulation": False,          # Kein Apple Event Handling nötig
