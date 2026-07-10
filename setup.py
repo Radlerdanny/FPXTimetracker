@@ -14,7 +14,12 @@ from py2app.build_app import py2app as _py2app_base
 
 
 class py2app_fixed(_py2app_base):
-    """py2app + Workaround: entfernt fälschlicherweise als .py abgelegte C-Extensions."""
+    """py2app + Workaround: entfernt fälschlicherweise als .py abgelegte C-Extensions.
+
+    py2app signiert die App auf Apple Silicon (arm64) automatisch ad-hoc
+    (Datei-für-Datei, dann das gesamte Bundle) – notwendig, damit sie überhaupt
+    startet. Das läuft hier unverändert mit, dieser Wrapper greift erst danach ein.
+    """
 
     def run(self):
         super().run()

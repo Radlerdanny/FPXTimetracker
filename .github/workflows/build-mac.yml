@@ -32,16 +32,27 @@ jobs:
           pip install --upgrade pip
           pip install py2app pyobjc-framework-Cocoa requests
 
-      - name: .app mit py2app bauen
+      - name: .app mit py2app bauen (inkl. Ad-hoc-Signierung)
         run: |
           source .venv/bin/activate
-          # Fake codesign: py2app versucht zu signieren, aber im CI gibt es kein Apple-Zertifikat.
-          # Der Fake-Wrapper gibt immer 0 zurück – Quarantine wird sowieso via Installieren.command entfernt.
-          mkdir -p "$HOME/bin"
-          printf '#!/bin/bash\nexit 0\n' > "$HOME/bin/codesign"
-          chmod +x "$HOME/bin/codesign"
-          export PATH="$HOME/bin:$PATH"
           python setup.py py2app
+
+      - name: App-Start verifizieren (Signatur + tatsächlicher Start)
+        run: |
+          APP="dist/FPX Timetracker.app"
+          echo "── Codesign-Status ──"
+          codesign -dv --verbose=4 "$APP"
+          echo ""
+          echo "── Starte App testweise ──"
+          open "$APP"
+          sleep 5
+          if ! pgrep -f "FPX Timetracker" > /dev/null; then
+            echo "::error::App wurde beendet/ist abgestürzt (SIGKILL/Code-Signature-Fehler?). Build abgebrochen."
+            ls -lt ~/Library/Logs/DiagnosticReports/ 2>/dev/null | head -5
+            exit 1
+          fi
+          echo "✓ App läuft (PID gefunden)."
+          pkill -f "FPX Timetracker" || true
 
       - name: Release-ZIP erstellen
         run: |

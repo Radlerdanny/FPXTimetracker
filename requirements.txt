@@ -1,5 +1,5 @@
 # FPX Timetracker — Abhängigkeiten
-# Python: 3.14.3
+# Python: 3.14 (siehe .github/workflows/*.yml für die exakte CI-Version)
 # Installation: pip install -r requirements.txt
 
 # Gemeinsam (Mac + Windows)
