@@ -104,7 +104,6 @@ def _load_tray_image() -> Image.Image:
 
 
 # ── Auto-Updater ─────────────────────────────────────────────────────────────
-# Deaktiviert – wird nach GitHub-Migration neu eingerichtet.
 
 def _ver_tuple(v: str):
     try: return tuple(int(x) for x in v.lstrip("v").split(".") if x.isdigit())
