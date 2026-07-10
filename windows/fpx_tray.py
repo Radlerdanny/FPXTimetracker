@@ -87,10 +87,18 @@ else:
     TRACKER_CMD = [sys.executable, str(ROOT / "fpx_timetracker.py"), "--popover"]
 
 
+def _resource_base() -> Path:
+    """Im PyInstaller-Bundle: sys._MEIPASS; im Dev-Modus: ROOT."""
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        return Path(sys._MEIPASS)
+    return ROOT
+
+
 def _load_tray_image() -> Image.Image:
-    tray = ROOT / "Logo" / "Windows" / "tray.ico"
+    base = _resource_base()
+    tray = base / "Logo" / "Windows" / "tray.ico"
     if tray.exists(): return Image.open(str(tray))
-    app = ROOT / "Logo" / "Windows" / "app.ico"
+    app = base / "Logo" / "Windows" / "app.ico"
     if app.exists(): return Image.open(str(app))
     return Image.new("RGBA", (32, 32), (71, 156, 197, 255))
 
@@ -159,7 +167,7 @@ def _download_installer(url: str, filename: str) -> "Path | None":
     root.resizable(False, False)
     root.attributes("-topmost", True)
     try:
-        ico = ROOT / "Logo" / "Windows" / "app.ico"
+        ico = _resource_base() / "Logo" / "Windows" / "app.ico"
         if ico.exists(): root.iconbitmap(str(ico))
     except Exception: pass
 

@@ -1,0 +1,58 @@
+name: Build Windows
+
+# Auslöser: jeder Tag der Form v1.2.3
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write   # für den Release-Upload nötig
+
+defaults:
+  run:
+    shell: bash     # Git Bash auf Windows – konsistente Syntax
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v4
+
+      - name: Python 3.12 installieren
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Version aus Tag lesen
+        id: ver
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+
+      - name: Abhängigkeiten installieren
+        run: |
+          python -m venv .venv
+          source .venv/Scripts/activate
+          pip install --upgrade pip
+          pip install pyinstaller requests pystray Pillow
+
+      - name: .exe mit PyInstaller bauen
+        run: |
+          source .venv/Scripts/activate
+          pyinstaller windows/fpx_installer.spec
+
+      - name: Inno Setup installieren
+        shell: pwsh
+        run: choco install innosetup --no-progress -y
+
+      - name: Installer bauen
+        run: |
+          V="${{ steps.ver.outputs.VERSION }}"
+          "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" \
+            "/DMyAppVersion=${V}" \
+            windows/fpx_installer.iss
+
+      - name: Installer zu GitHub Release hochladen
+        uses: softprops/action-gh-release@v2
+        with:
+          files: "dist/FPXTimetracker_Setup_v${{ steps.ver.outputs.VERSION }}.exe"
