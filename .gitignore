@@ -5,6 +5,7 @@ __pycache__/
 
 # Virtual environment
 .venv/
+.venv_win/
 
 # py2app / PyInstaller build output
 build/

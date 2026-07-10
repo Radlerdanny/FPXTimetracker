@@ -1197,6 +1197,11 @@ def main(shared_root: "tk.Tk | None" = None):
     if shared_root is None:
         shared_root = tk.Tk()
         shared_root.withdraw()
+        if IS_WIN:
+            _sys_sc = float(shared_root.tk.call('tk', 'scaling'))
+            shared_root.tk.call('tk', 'scaling', _sys_sc * 72 / 96)
+            import config as _cfg
+            _cfg.SCALE = float(shared_root.tk.call('tk', 'scaling'))
 
     if _UPDATE_ARGS and IS_MAC:
         _run_mac_update(*_UPDATE_ARGS, root=shared_root)
@@ -1222,13 +1227,4 @@ if __name__ == "__main__":
             _ct.windll.shell32.SetCurrentProcessExplicitAppUserModelID("de.fourplex.timetracker")
         except Exception: pass
 
-    _root = tk.Tk()
-    _root.withdraw()
-
-    if IS_WIN:
-        _sys_sc = float(_root.tk.call('tk', 'scaling'))
-        _root.tk.call('tk', 'scaling', _sys_sc * 72 / 96)
-        import config as _cfg
-        _cfg.SCALE = float(_root.tk.call('tk', 'scaling'))
-
-    main(_root)
+    main()
