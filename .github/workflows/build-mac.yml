@@ -53,11 +53,19 @@ jobs:
           source .venv/bin/activate
           python setup.py py2app
 
-      - name: App-Start verifizieren (Signatur + tatsächlicher Start)
+      - name: App-Start verifizieren (Signatur + Tk-Version im Bundle + tatsächlicher Start)
         run: |
           APP="dist/FPX Timetracker.app"
           echo "── Codesign-Status ──"
           codesign -dv --verbose=4 "$APP"
+          echo ""
+          echo "── Tk-Version IM FERTIGEN BUNDLE (nicht nur Build-Umgebung) ──"
+          "$APP/Contents/MacOS/python" -c "
+          import tkinter
+          v = tkinter.TkVersion
+          print(f'Tk-Version im Bundle: {v}')
+          assert v < 9.0, f'FALSCHE Tk-Version {v} im fertigen Bundle – muss 8.6.x sein!'
+          "
           echo ""
           echo "── Starte App testweise ──"
           open "$APP"

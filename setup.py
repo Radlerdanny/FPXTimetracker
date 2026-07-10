@@ -31,6 +31,23 @@ def _codesign_adhoc_fixed(bundle):
         a_file.unlink()
     if removed:
         print(f"  ✓ Build-Fix: {len(removed)} statische Stub-Library(s) vor dem Signieren entfernt")
+
+    # Nur Tcl/Tk 8.6 wird unterstützt (Tk 9.0 sieht sichtbar anders aus – größere
+    # Schrift, andere Buttons). Manche Build-Runner bündeln zusätzlich zur echten
+    # 8.6-Version noch eine ungenutzte 9.0 in Tcl.framework/Tk.framework mit (auch
+    # wenn "Current" korrekt auf 8.6 zeigt) – diese Ordner konsequent entfernen,
+    # damit niemals eine andere Version geladen werden kann, egal was "Current"
+    # gerade zeigt oder in Zukunft zeigen könnte.
+    import shutil
+    for fw in ("Tcl.framework", "Tk.framework"):
+        versions_dir = Path(bundle) / "Contents" / "Frameworks" / fw / "Versions"
+        if not versions_dir.is_dir():
+            continue
+        for v_dir in versions_dir.iterdir():
+            if v_dir.is_dir() and v_dir.name not in ("Current", "8.6"):
+                shutil.rmtree(v_dir)
+                print(f"  ✓ Build-Fix: unerwünschte {fw}-Version entfernt: {v_dir.name}")
+
     _codesign_adhoc_orig(bundle)
 
 
