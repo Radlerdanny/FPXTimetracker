@@ -60,8 +60,11 @@ jobs:
           FOLDER="FPXTimetracker_Mac_v${V}"
           mkdir "$FOLDER"
           cp -R "dist/FPX Timetracker.app" "$FOLDER/"
-          cp Installieren.command "$FOLDER/"
-          chmod +x "$FOLDER/Installieren.command"
+          # .scpt statt .command: öffnet sich im Skripteditor (Doppelklick + Play),
+          # dadurch keine Gatekeeper-Warnung "Datei könnte gefährlich sein" bei
+          # heruntergeladenen Dateien wie bei direkt ausführbaren .command-Skripten.
+          osacompile -o "$FOLDER/Installieren.scpt" Installieren.applescript
+          cp "LIES MICH.txt" "$FOLDER/"
           zip -r "${FOLDER}.zip" "$FOLDER"
 
       - name: ZIP zu GitHub Release hochladen

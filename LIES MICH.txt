@@ -1,0 +1,5 @@
+FPX Timetracker – Installation (macOS)
+
+1. Doppelklick auf "Installieren.scpt" — öffnet sich im Skripteditor.
+2. Oben links auf den Play-Knopf (▶) klicken.
+3. Fertig! FPX Timetracker.app kannst du jetzt per Doppelklick starten.

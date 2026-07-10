@@ -4,18 +4,22 @@ Internes Tool der Fourplex-Agentur für PROAD-Zeiterfassung direkt aus der Menü
 Offene Todos sehen, Timer starten, Zeiten am Tagesende gebündelt nach PROAD buchen — ohne den Browser zu öffnen.
 
 **Plattformen:** macOS 12+ · Windows 10/11  
-**Version:** 0.8.1  
-**Python:** 3.14.3
+**Version:** 0.8.2  
+**Python:** 3.14
 
 ---
 
 ## Installation
 
+Fertige Releases: [GitHub Releases](https://github.com/Radlerdanny/FPXTimetracker/releases/latest)
+
 ### macOS
 
-> Installer folgt nach GitHub-Migration.
+1. `FPXTimetracker_Mac_v*.zip` herunterladen und entpacken
+2. Doppelklick auf `Installieren.scpt` — öffnet sich im Skripteditor
+3. Auf den Play-Knopf (▶) klicken, dann `FPX Timetracker.app` per Doppelklick starten
 
-Manuell starten:
+Manuell aus dem Quellcode starten:
 ```bash
 pip install requests pyobjc-framework-Cocoa
 python mac/fpx_menubar.py
@@ -23,9 +27,9 @@ python mac/fpx_menubar.py
 
 ### Windows
 
-> Installer folgt nach GitHub-Migration.
+1. `FPXTimetracker_Win_v*.exe` herunterladen und ausführen (Installation ins Benutzerverzeichnis, kein Admin nötig)
 
-Manuell starten:
+Manuell aus dem Quellcode starten:
 ```bash
 pip install requests pystray pillow
 python windows/fpx_tray.py
