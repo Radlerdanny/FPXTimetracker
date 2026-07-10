@@ -20,10 +20,10 @@ jobs:
       - name: Code auschecken
         uses: actions/checkout@v4
 
-      - name: Python 3.14 installieren
+      - name: Python 3.14.3 installieren
         uses: actions/setup-python@v5
         with:
-          python-version: '3.14'
+          python-version: '3.14.3'
 
       - name: Version aus Tag lesen
         id: ver
