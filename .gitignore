@@ -25,3 +25,6 @@ Desktop.ini
 
 # Claude Code
 .claude/
+
+# Interne Entwicklerdokumentation (Kollegen-Namen, URNOs, interne URLs)
+Timetracker_Projektwissen.md
