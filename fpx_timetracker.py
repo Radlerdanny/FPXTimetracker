@@ -18,6 +18,7 @@ multiprocessing.freeze_support()
 import ctypes
 import json, math, os, re, sys, threading, time, requests, urllib3
 from datetime import date, datetime, timedelta
+from pathlib import Path
 import tkinter as tk
 from tkinter import ttk
 
@@ -1099,8 +1100,8 @@ def _run_mac_update(url: str, filename: str, current_app_path: str, root: tk.Tk)
         w.destroy()
 
     tk.Label(root, text="Update wird heruntergeladen…",
-             bg=C["bg"], fg=C["text"], font=(FONT_MAIN, 13, "bold"),
-             padx=24, pady=(18, 4)).pack()
+             bg=C["bg"], fg=C["text"], font=(FONT_MAIN, 13, "bold")
+             ).pack(padx=24, pady=(18, 4))
     status_var = tk.StringVar(value="Verbinde…")
     tk.Label(root, textvariable=status_var,
              bg=C["bg"], fg=C["text_dim"], font=(FONT_MAIN, 10)).pack(pady=(0, 10))
@@ -1153,6 +1154,14 @@ def _run_mac_update(url: str, filename: str, current_app_path: str, root: tk.Tk)
             new_app = str(apps[0])
             _sp.run(["xattr", "-dr", "com.apple.quarantine", new_app], capture_output=True)
 
+            # zipfile.extractall() erhält keine Unix-Ausführungsrechte aus dem ZIP –
+            # ohne das hier würde die neue App nicht mehr startbar sein ("Launchd job
+            # spawn failed", da z.B. Contents/MacOS/FPX Timetracker nicht mehr +x ist).
+            macos_dir = Path(new_app) / "Contents" / "MacOS"
+            for f in macos_dir.iterdir():
+                if f.is_file():
+                    f.chmod(f.stat().st_mode | 0o111)
+
             if current_app_path:
                 script_path = "/tmp/fpx_update_replace.sh"
                 Path(script_path).write_text(
@@ -1160,6 +1169,7 @@ def _run_mac_update(url: str, filename: str, current_app_path: str, root: tk.Tk)
                     "sleep 0.5\n"
                     f"rm -rf '{current_app_path}'\n"
                     f"cp -R '{new_app}' '{current_app_path}'\n"
+                    f"chmod +x '{current_app_path}/Contents/MacOS/'*\n"
                     f"xattr -dr com.apple.quarantine '{current_app_path}' 2>/dev/null\n"
                     f"open '{current_app_path}'\n"
                     f"rm -rf '{tmp_dir}'\n"
@@ -1176,7 +1186,8 @@ def _run_mac_update(url: str, filename: str, current_app_path: str, root: tk.Tk)
                 root.after(2000, root.destroy)
 
         except Exception as e:
-            root.after(0, lambda: status_var.set(f"Fehler: {e}"))
+            err_msg = str(e)
+            root.after(0, lambda m=err_msg: status_var.set(f"Fehler: {m}"))
 
     _th.Thread(target=_do, daemon=True).start()
     root.mainloop()

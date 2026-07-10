@@ -171,8 +171,8 @@ def _download_installer(url: str, filename: str) -> "Path | None":
     except Exception: pass
 
     tk.Label(root, text="Update wird heruntergeladen…",
-             bg=C_BG, fg=C_TEXT, font=("Segoe UI", 11, "bold"),
-             padx=24, pady=(18, 4)).pack()
+             bg=C_BG, fg=C_TEXT, font=("Segoe UI", 11, "bold")
+             ).pack(padx=24, pady=(18, 4))
     status_var = tk.StringVar(value="Verbinde…")
     tk.Label(root, textvariable=status_var,
              bg=C_BG, fg=C_DIM, font=("Segoe UI", 9)).pack(pady=(0, 10))
