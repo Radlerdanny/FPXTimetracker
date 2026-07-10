@@ -134,17 +134,12 @@ def _check_github():
         return None
 
 
-def _ask_user(version: str, changelog: str) -> bool:
+def _ask_user(version: str) -> bool:
     import ctypes
-    cl_lines = [l.strip() for l in (changelog or "").split("\n") if l.strip()]
-    cl_text = "\n".join(cl_lines[:8]) if cl_lines else "Keine Details verfügbar."
     msg = (
-        f"Eine neue Version von FPX Timetracker ist verfügbar.\n\n"
-        f"Aktuelle Version:  v{APP_VERSION}\n"
-        f"Neue Version:      v{version}\n\n"
-        f"── Neuerungen ──────────────\n\n"
-        f"{cl_text}\n\n"
-        f"Jetzt herunterladen und installieren?")
+        f"FPX Timetracker {version} ist verfügbar.\n\n"
+        f"Aktuelle Version: {APP_VERSION}\n\n"
+        f"Jetzt aktualisieren?")
     MB_YESNO = 0x04; MB_ICONINFO = 0x40; IDYES = 6
     try:
         res = ctypes.windll.user32.MessageBoxW(
@@ -236,8 +231,8 @@ def check_and_update(app: "TrayApp", manual: bool = False):
                 0, "FPX Timetracker ist auf dem neuesten Stand.",
                 "FPX Timetracker", 0x40)
         return
-    version, changelog, url, filename = res
-    if not _ask_user(version, changelog): return
+    version, _changelog, url, filename = res
+    if not _ask_user(version): return
     installer = _download_installer(url, filename)
     if not installer: return
 
