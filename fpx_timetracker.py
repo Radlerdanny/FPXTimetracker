@@ -68,15 +68,6 @@ PROJEKTMANAGER = [
 def _apply_icon(root: tk.Tk):
     if not IS_WIN: return
     try:
-        from PIL import Image, ImageTk
-        png = os.path.join(os.path.dirname(__file__), "Logo", "Icon.png")
-        if os.path.exists(png):
-            photo = ImageTk.PhotoImage(Image.open(png).resize((256, 256), Image.LANCZOS))
-            root._icon_photo = photo  # prevent garbage collection
-            root.iconphoto(True, photo)
-            return
-    except Exception: pass
-    try:
         ico = os.path.join(os.path.dirname(__file__), "Logo", "Windows", "app.ico")
         if os.path.exists(ico): root.iconbitmap(default=ico)
     except Exception: pass

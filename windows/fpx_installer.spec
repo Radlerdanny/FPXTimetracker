@@ -13,7 +13,6 @@ a = Analysis(
     datas=[
         ('../Logo/Windows/tray.ico', 'Logo/Windows'),
         ('../Logo/Windows/app.ico',  'Logo/Windows'),
-        ('../Logo/Icon.png',         'Logo'),        # hochauflösendes Fenster-Icon (fpx_timetracker._apply_icon)
     ],
     hiddenimports=[
         'fpx_timetracker',     # per --popover-Flag zur Laufzeit importiert
