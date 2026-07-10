@@ -12,14 +12,33 @@ from pathlib import Path
 from setuptools import setup
 from py2app.build_app import py2app as _py2app_base
 
+import py2app.build_app as _py2app_build_app
+from py2app.util import codesign_adhoc as _codesign_adhoc_orig
+
+# py2app signiert die App auf Apple Silicon (arm64) automatisch ad-hoc (notwendig,
+# sonst SIGKILL "Code Signature Invalid" beim Start). Manche Python-Distributionen
+# (z.B. der von actions/setup-python auf GitHub Actions installierte Build) bündeln
+# in Tcl.framework/Tk.framework zusätzlich statische Stub-Libraries (libtclstub.a,
+# libtkstub.a) – die werden von codesign fälschlicherweise als "Subkomponente" der
+# Tcl/Tk-Binaries gewertet, sind aber keine gültigen Mach-O-Dateien und lassen sich
+# nicht signieren, wodurch codesign den kompletten Bundle-Sign-Vorgang abbricht.
+# Diese .a-Dateien werden zur Laufzeit nicht gebraucht (nur zum Linken von
+# C-Extensions gegen Tcl/Tk) – vor dem Signieren löschen, dann py2apps eigene
+# (korrekte) Signierlogik unverändert weiterlaufen lassen.
+def _codesign_adhoc_fixed(bundle):
+    removed = list(Path(bundle).rglob("*.a"))
+    for a_file in removed:
+        a_file.unlink()
+    if removed:
+        print(f"  ✓ Build-Fix: {len(removed)} statische Stub-Library(s) vor dem Signieren entfernt")
+    _codesign_adhoc_orig(bundle)
+
+
+_py2app_build_app.codesign_adhoc = _codesign_adhoc_fixed
+
 
 class py2app_fixed(_py2app_base):
-    """py2app + Workaround: entfernt fälschlicherweise als .py abgelegte C-Extensions.
-
-    py2app signiert die App auf Apple Silicon (arm64) automatisch ad-hoc
-    (Datei-für-Datei, dann das gesamte Bundle) – notwendig, damit sie überhaupt
-    startet. Das läuft hier unverändert mit, dieser Wrapper greift erst danach ein.
-    """
+    """py2app + Workaround: entfernt fälschlicherweise als .py abgelegte C-Extensions."""
 
     def run(self):
         super().run()
