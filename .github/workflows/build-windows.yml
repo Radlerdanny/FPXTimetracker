@@ -23,7 +23,7 @@ jobs:
       - name: Python 3.12 installieren
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.14'
 
       - name: Version aus Tag lesen
         id: ver
@@ -55,4 +55,4 @@ jobs:
       - name: Installer zu GitHub Release hochladen
         uses: softprops/action-gh-release@v2
         with:
-          files: "dist/FPXTimetracker_Setup_v${{ steps.ver.outputs.VERSION }}.exe"
+          files: "dist/FPXTimetracker_Win_v${{ steps.ver.outputs.VERSION }}.exe"

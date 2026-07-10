@@ -127,7 +127,7 @@ def _check_github():
         installer = next(
             (a for a in assets
              if a.get("name", "").lower().endswith(".exe")
-             and "setup" in a.get("name", "").lower()),
+             and "_win_" in a.get("name", "").lower()),
             None)
         if not installer: return None
         return tag, body, installer["browser_download_url"], installer["name"]

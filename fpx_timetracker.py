@@ -35,6 +35,14 @@ PROAD_URL   = "https://proad.fourplex.de/api/v5"
 SSL_VERIFY  = False
 POPOVER_MODE = "--popover" in sys.argv
 
+_UPDATE_ARGS = None  # (url, filename, current_app_path) — nur Mac
+if "--update-download" in sys.argv and IS_MAC:
+    try:
+        _i = sys.argv.index("--update-download")
+        _UPDATE_ARGS = (sys.argv[_i + 1], sys.argv[_i + 2], sys.argv[_i + 3])
+    except IndexError:
+        pass
+
 STATUS_KEY_ERLEDIGT = "500"; STATUS_KEY_WARTET = "300"; STATUS_DONE = {"500", "600"}
 C = {
     "bg":"#111111","panel":"#181818","card":"#1F1F1F","card2":"#272727","border":"#333333",
@@ -1087,7 +1095,111 @@ class FPXTimeTracker:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-def main(shared_root: tk.Tk):
+def _run_mac_update(url: str, filename: str, current_app_path: str, root: tk.Tk):
+    """Mac Auto-Update: Fortschrittsbalken → Download → Quarantäne entfernen → Neustart."""
+    import tempfile, zipfile, threading as _th, subprocess as _sp, os as _os
+
+    root.deiconify()
+    root.title("FPX Timetracker – Update")
+    root.configure(bg=C["bg"])
+    root.resizable(False, False)
+    root.attributes("-topmost", True)
+    for w in root.winfo_children():
+        w.destroy()
+
+    tk.Label(root, text="Update wird heruntergeladen…",
+             bg=C["bg"], fg=C["text"], font=(FONT_MAIN, 13, "bold"),
+             padx=24, pady=(18, 4)).pack()
+    status_var = tk.StringVar(value="Verbinde…")
+    tk.Label(root, textvariable=status_var,
+             bg=C["bg"], fg=C["text_dim"], font=(FONT_MAIN, 10)).pack(pady=(0, 10))
+
+    style = ttk.Style(root)
+    style.theme_use("default")
+    style.configure("FPX.Horizontal.TProgressbar",
+                    troughcolor=C["border"], background=C["accent"],
+                    thickness=8, borderwidth=0)
+    progress_var = tk.DoubleVar(value=0)
+    ttk.Progressbar(root, variable=progress_var, maximum=100,
+                    length=340, style="FPX.Horizontal.TProgressbar").pack(padx=24, pady=(0, 20))
+
+    root.update_idletasks()
+    rw, rh = root.winfo_reqwidth(), root.winfo_reqheight()
+    sw, sh = root.winfo_screenwidth(), root.winfo_screenheight()
+    root.geometry(f"{rw}x{rh}+{(sw - rw) // 2}+{(sh - rh) // 2}")
+
+    def _do():
+        try:
+            tmp_dir = Path(tempfile.mkdtemp(prefix="fpx_update_"))
+            zip_path = tmp_dir / filename
+
+            r = requests.get(url, timeout=300, stream=True)
+            r.raise_for_status()
+            total = int(r.headers.get("content-length", 0))
+            done = 0
+            with open(zip_path, "wb") as f:
+                for chunk in r.iter_content(65536):
+                    if chunk:
+                        f.write(chunk); done += len(chunk)
+                        if total > 0:
+                            pct = done / total * 100
+                            mb_d, mb_t = done / 1_048_576, total / 1_048_576
+                            root.after(0, lambda p=pct, d=mb_d, t=mb_t: (
+                                progress_var.set(p),
+                                status_var.set(f"{d:.1f} MB / {t:.1f} MB")
+                            ))
+
+            root.after(0, lambda: (progress_var.set(100), status_var.set("Entpacke…")))
+
+            extract_dir = tmp_dir / "x"
+            with zipfile.ZipFile(zip_path) as z:
+                z.extractall(extract_dir)
+
+            apps = list(extract_dir.rglob("*.app"))
+            if not apps:
+                root.after(0, lambda: status_var.set("Fehler: .app nicht gefunden"))
+                return
+            new_app = str(apps[0])
+            _sp.run(["xattr", "-dr", "com.apple.quarantine", new_app], capture_output=True)
+
+            if current_app_path:
+                script_path = "/tmp/fpx_update_replace.sh"
+                Path(script_path).write_text(
+                    "#!/bin/bash\n"
+                    "sleep 0.5\n"
+                    f"rm -rf '{current_app_path}'\n"
+                    f"cp -R '{new_app}' '{current_app_path}'\n"
+                    f"xattr -dr com.apple.quarantine '{current_app_path}' 2>/dev/null\n"
+                    f"open '{current_app_path}'\n"
+                    f"rm -rf '{tmp_dir}'\n"
+                )
+                _os.chmod(script_path, 0o755)
+                root.after(0, lambda: status_var.set("Neustart…"))
+
+                def _finish():
+                    _sp.Popen(["/bin/bash", script_path], start_new_session=True)
+                    root.after(800, root.destroy)
+                root.after(500, _finish)
+            else:
+                root.after(0, lambda: status_var.set("Fertig."))
+                root.after(2000, root.destroy)
+
+        except Exception as e:
+            root.after(0, lambda: status_var.set(f"Fehler: {e}"))
+
+    _th.Thread(target=_do, daemon=True).start()
+    root.mainloop()
+
+
+def main(shared_root: "tk.Tk | None" = None):
+    if shared_root is None:
+        shared_root = tk.Tk()
+        shared_root.withdraw()
+
+    if _UPDATE_ARGS and IS_MAC:
+        _run_mac_update(*_UPDATE_ARGS, root=shared_root)
+        return
+
     data = load_data(); config = data.get("config", {})
     if not config.get("api_key") or not config.get("person_urno"):
         sw = SetupWindow(shared_root); result = sw.result

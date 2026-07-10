@@ -7,7 +7,7 @@ Unterstützt Dev-Modus (python mac/fpx_menubar.py) und py2app-Bundle.
 import multiprocessing
 multiprocessing.freeze_support()
 
-import sys, os, fcntl, subprocess, time, plistlib
+import sys, os, fcntl, subprocess, time, plistlib, threading
 from pathlib import Path
 
 # Singleton: nur eine Instanz erlaubt
@@ -32,7 +32,65 @@ else:
 
 PYTHON = sys.executable
 
-from config import APP_VERSION, DATA_DIR, IPC_FILE, write_ipc, read_ipc
+from config import APP_VERSION, GITHUB_REPO, DATA_DIR, IPC_FILE, write_ipc, read_ipc
+
+# ── Auto-Updater ─────────────────────────────────────────────────────────────
+
+_pending_update = None  # wird vom Background-Thread gesetzt, vom Main-Thread konsumiert
+
+
+def _ver_tuple(v: str):
+    try: return tuple(int(x) for x in v.lstrip("v").split(".") if x.isdigit())
+    except Exception: return (0,)
+
+
+def _check_github():
+    try:
+        import requests
+        r = requests.get(
+            f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest",
+            timeout=10)
+        if not r.ok: return None
+        d = r.json()
+        tag = (d.get("tag_name") or "").lstrip("v")
+        assets = d.get("assets") or []
+        if not tag or _ver_tuple(tag) <= _ver_tuple(APP_VERSION): return None
+        mac_zip = next(
+            (a for a in assets
+             if a.get("name", "").lower().endswith(".zip")
+             and "mac" in a.get("name", "").lower()),
+            None)
+        if not mac_zip: return None
+        return tag, d.get("body", ""), mac_zip["browser_download_url"], mac_zip["name"]
+    except Exception: return None
+
+
+def _ask_user_update(version: str, changelog: str) -> bool:
+    cl_lines = [l.strip() for l in (changelog or "").split("\n") if l.strip()][:5]
+    cl_text = "\\n".join(cl_lines) if cl_lines else "Keine Details verfügbar."
+    msg = (f"FPX Timetracker {version} ist verfügbar.\\n\\n"
+           f"Aktuelle Version: {APP_VERSION}\\n\\n"
+           f"{cl_text}\\n\\nJetzt aktualisieren?")
+    result = subprocess.run([
+        "osascript", "-e",
+        f'display dialog "{msg}" '
+        f'buttons {{"Später", "Aktualisieren"}} '
+        f'default button "Aktualisieren" '
+        f'with title "FPX Timetracker – Update verfügbar"'
+    ], capture_output=True)
+    return result.returncode == 0
+
+
+def check_and_update(_delegate):
+    global _pending_update
+    time.sleep(8)
+    res = _check_github()
+    if not res: return
+    version, changelog, url, filename = res
+    if not _ask_user_update(version, changelog): return
+    current_app = str(Path(sys.executable).parent.parent.parent) if getattr(sys, "frozen", False) else ""
+    _pending_update = (url, filename, current_app)
+
 
 # ── Autostart (LaunchAgent) ───────────────────────────────────────────────────
 _AGENT_ID    = "de.fourplex.timetracker"
@@ -115,6 +173,8 @@ class AppDelegate(NSObject):
         self._timer = NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(
             1.0, self, "tick:", None, True)
 
+        threading.Thread(target=lambda: check_and_update(self), daemon=True).start()
+
     def iconClicked_(self, sender):
         event    = NSApp.currentEvent()
         is_right = (event and (
@@ -135,6 +195,13 @@ class AppDelegate(NSObject):
             label, "toggleAutostart:", "")
         i_auto.setTarget_(self)
         menu.addItem_(i_auto)
+
+        menu.addItem_(NSMenuItem.separatorItem())
+
+        i_upd = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
+            "   Nach Updates suchen", "manualCheckUpdate:", "")
+        i_upd.setTarget_(self)
+        menu.addItem_(i_upd)
 
         menu.addItem_(NSMenuItem.separatorItem())
 
@@ -191,7 +258,34 @@ class AppDelegate(NSObject):
         else:
             write_ipc({"cmd": "show", "ts": time.time()})
 
+    def manualCheckUpdate_(self, sender):
+        threading.Thread(target=lambda: check_and_update(self), daemon=True).start()
+
+    def _launch_update(self, url: str, filename: str, current_app: str):
+        """Auf dem Main-Thread: Tracker beenden, Update-Downloader starten, App beenden."""
+        write_ipc({"cmd": "quit", "ts": time.time()})
+        time.sleep(0.3)
+        if self._proc and self._proc.poll() is None:
+            self._proc.terminate()
+            time.sleep(0.3)
+        if getattr(sys, "frozen", False):
+            macos_dir = Path(sys.executable).parent
+            cmd = [str(macos_dir / "fpx_timetracker"),
+                   "--update-download", url, filename, current_app]
+        else:
+            cmd = [PYTHON, str(ROOT / "fpx_timetracker.py"),
+                   "--update-download", url, filename, current_app]
+        subprocess.Popen(cmd, cwd=str(ROOT))
+        from AppKit import NSApp as _NSApp
+        _NSApp.terminate_(None)
+
     def tick_(self, timer):
+        global _pending_update
+        if _pending_update:
+            url, filename, current_app = _pending_update
+            _pending_update = None
+            self._launch_update(url, filename, current_app)
+            return
         d    = read_ipc()
         if d.get("quit_all") and time.time() - d.get("ts", 0) < 5:
             IPC_FILE.write_text("{}")
