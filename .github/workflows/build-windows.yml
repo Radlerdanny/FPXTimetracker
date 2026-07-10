@@ -41,6 +41,20 @@ jobs:
           source .venv/Scripts/activate
           pyinstaller windows/fpx_installer.spec
 
+      - name: App-Start verifizieren (tatsächlicher Start)
+        shell: pwsh
+        run: |
+          $exe = "dist\FPX Timetracker\FPX Timetracker.exe"
+          Start-Process -FilePath $exe
+          Start-Sleep -Seconds 5
+          $proc = Get-Process -Name "FPX Timetracker" -ErrorAction SilentlyContinue
+          if (-not $proc) {
+            Write-Host "::error::App wurde beendet/ist abgestürzt. Build abgebrochen."
+            exit 1
+          }
+          Write-Host "✓ App läuft (PID $($proc.Id))."
+          Stop-Process -Name "FPX Timetracker" -Force -ErrorAction SilentlyContinue
+
       - name: Inno Setup installieren
         shell: pwsh
         run: choco install innosetup --no-progress -y
