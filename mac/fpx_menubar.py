@@ -73,15 +73,16 @@ def _as_escape(s: str) -> str:
     return s.replace("\\", "\\\\").replace('"', '\\"')
 
 
-def _ask_user_update(version: str, changelog: str) -> bool:
-    cl_lines = [l.strip() for l in (changelog or "").split("\n") if l.strip()][:5]
-    cl_text = "\\n".join(cl_lines) if cl_lines else "Keine Details verfügbar."
-    msg = (f"FPX Timetracker {version} ist verfügbar.\\n\\n"
+def _ask_user_update(version: str) -> bool:
+    # Nur "version" escapen (kommt vom GitHub-API-Tag-Namen, extern) – die \\n
+    # sind bewusste AppleScript-Zeilenumbrüche, kein Escaping darauf anwenden,
+    # sonst wird daraus ein wörtliches "\n" statt eines Umbruchs im Dialog.
+    msg = (f"FPX Timetracker {_as_escape(version)} ist verfügbar.\\n\\n"
            f"Aktuelle Version: {APP_VERSION}\\n\\n"
-           f"{cl_text}\\n\\nJetzt aktualisieren?")
+           f"Jetzt aktualisieren?")
     result = subprocess.run([
         "osascript", "-e",
-        f'display dialog "{_as_escape(msg)}" '
+        f'display dialog "{msg}" '
         f'buttons {{"Später", "Aktualisieren"}} '
         f'default button "Aktualisieren" '
         f'with title "FPX Timetracker – Update verfügbar"'
@@ -102,8 +103,8 @@ def check_and_update(_delegate, manual: bool = False):
                 'with title "FPX Timetracker"'
             ], capture_output=True)
         return
-    version, changelog, url, filename = res
-    if not _ask_user_update(version, changelog): return
+    version, _changelog, url, filename = res
+    if not _ask_user_update(version): return
     current_app = str(Path(sys.executable).parent.parent.parent) if getattr(sys, "frozen", False) else ""
     _pending_update = (url, filename, current_app)
 
