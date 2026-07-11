@@ -6,9 +6,17 @@
 #
 # Ergebnis: dist/FPX Timetracker/ (Ordner mit .exe + DLLs)
 
+import os
+# Absolut statt relativ ('..' wäre abhängig vom Arbeitsverzeichnis beim
+# pyinstaller-Aufruf — das führte auf GitHub Actions dazu, dass config.py
+# und fpx_timetracker.py NICHT gefunden/gebündelt wurden, obwohl der Build
+# lokal immer funktionierte. SPECPATH ist der Ordner dieser .spec-Datei
+# selbst und damit unabhängig vom Aufruf-Arbeitsverzeichnis.
+PROJECT_ROOT = os.path.abspath(os.path.join(SPECPATH, '..'))
+
 a = Analysis(
     ['fpx_tray.py'],           # relativ zum Spec-Verzeichnis (windows/)
-    pathex=['..'],             # Projektverzeichnis → findet config.py + fpx_timetracker.py
+    pathex=[PROJECT_ROOT],     # Projektverzeichnis → findet config.py + fpx_timetracker.py
     binaries=[],
     datas=[
         ('../Logo/Windows/tray.ico', 'Logo/Windows'),
